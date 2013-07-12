@@ -8,6 +8,10 @@
 # C extensions
 *.so
 
+#Excel
+*.xlsx
+*.xls
+
 # Packages
 *.egg
 *.egg-info
