@@ -12,19 +12,20 @@ class ResultsAnalyser(object):
     This class analyses fitted trade strategy object
     '''
 
-    def __init__(self, strategy, referenceIndex = None):
+    def __init__(self, data, valueIndex = 'Value', referenceIndex = None):
         '''
         Takes a pandas dataframe object with a 'Date' index which should be of type date or datetime
-        'Value' column which is timeseries of portfolio value
+        valueIndex column which is timeseries of portfolio value
         'Signal' which is the trade signal
         '''
-        self.result = strategy.result
+        self.valueIndex = valueIndex
+        self.result = data
         if referenceIndex != None:
-            self.refIndex = strategy.market_data.core_data[referenceIndex]
+            self.refIndex = data[referenceIndex]
         else:
             self.refIndex = None
             
-        self.result_date_range = [ strategy.result.index[0], strategy.result.index[-1]]
+        self.result_date_range = [ data.index[0], data.index[-1]]
         self.result_subset = self.result.loc[self.result_date_range[0]:self.result_date_range[-1]].copy()
          
 
@@ -38,9 +39,9 @@ class ResultsAnalyser(object):
         self.result_subset = self.result.loc[self.result_date_range[0]:self.result_date_range[-1]].copy()
         
         if make_positive:
-            if min(self.result_subset['Value']) <= 0:
+            if min(self.result_subset[self.valueIndex]) <= 0:
                 #make the series >= 100 so that returns calc ok
-                self.result_subset['Value'] += np.abs(min(self.result_subset['Value'])) + 100
+                self.result_subset[self.valueIndex] += np.abs(min(self.result_subset[self.valueIndex])) + 100
             
     
     def reset_range_to_dafault(self): 
@@ -55,16 +56,16 @@ class ResultsAnalyser(object):
         
         ''' Calcs returns vs above referenceIndex, if None type then usual returns '''
         
-        value = self.result_subset['Value']
-        #data = self.result['Value'][self.result['Value'].notnull()] #Horrible line, but is just filtering out notnull values
+        value = self.result_subset[self.valueIndex]
+        #data = self.result[self.valueIndex][self.result[self.valueIndex].notnull()] #Horrible line, but is just filtering out notnull values
         retsPort = pd.DataFrame(value.pct_change())
         #retsPort = (1+retsPort)**cumperiods-1 #For annualising
         
         if useReference == True:
-            if self.refIndex == None:
+            if self.refIndex is  None:
                 raise ValueError('No reference index set')
             
-            retsRef = self.refIndex.pct_change()
+            retsRef = pd.DataFrame(self.refIndex.pct_change())
             rets = pd.merge(retsPort,retsRef, how='inner',left_index=True,right_index=True)
             
         else:
@@ -87,7 +88,7 @@ class ResultsAnalyser(object):
         
         '''Get volatility of portfolio value or returns'''
         if not(returns):
-            value = self.result_subset['Value']
+            value = self.result_subset[self.valueIndex]
             return value.std()
         else:
             rets = self.get_returns(annualising_scalar, False) #get 1period returns
@@ -144,7 +145,7 @@ class ResultsAnalyser(object):
         '''Calcs timeseries of current percentage drawdown'''
         
         #Calculate percentag Drawdowns 
-        value = self.result_subset['Value']
+        value = self.result_subset[self.valueIndex]
         startt= value.index[0]
         Max = value[startt]
         dd = 0
@@ -207,7 +208,7 @@ class ResultsAnalyser(object):
     def var(self, percentile = 0.05):
         '''Value at Risk'''
         #subset on range and then diff
-        diffs = value = self.result_subset['Value'].diff()
+        diffs = value = self.result_subset[self.valueIndex].diff()
         return diffs.quantile(percentile)
         
  
@@ -215,7 +216,7 @@ class ResultsAnalyser(object):
         '''Expected Tail Loss'''
         
         
-        diffs = value = self.result_subset['Value'].diff()
+        diffs = value = self.result_subset[self.valueIndex].diff()
         
         #sort is in place
         diffs.sort()

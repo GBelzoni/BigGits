@@ -33,17 +33,6 @@ def setup_strategy(pars, dataObj):
     train_data = dataObj[[series_X,series_Y]].loc[train_start:train_end]
     test_data = dataObj[[series_X,series_Y]].loc[test_start:test_end]
     
-    #Setup portfolio
-    trade_equity_spread = TradeEquity('spread', 
-                                      notional=0, 
-                                      price_series_label='spread')
-    
-    
-    port = Portfolio("portfolio", cashAmt=100)
-    port.add_trade(trade_equity_spread)
-    #No more trade types
-    port.fixed_toggle()
-    
     #Setup Strategy
     strat = Strategy_Pairs(series_X,
                                   series_Y,
@@ -54,72 +43,56 @@ def setup_strategy(pars, dataObj):
                                   exit_scale = exit_scale,
                                   )
     
-    
+    #fit scaling parameter
     strat.fit(train_data)
-    return port, strat, train_data, test_data
+    
+    return strat, train_data, test_data
 
 ##################strat.runStrat##########################
-def runStrat(strat_parameters, results_tables, dataObj, outfile):
+def runStrat(strat_parameters, dataObj, outfile, result_table_cols, result_func):
 
+    #Write col headings
+    header = ','.join(result_table_cols) + '\n'
+    outfile.write(header)
+    
     rownum = 0
     total_rows = len(strat_parameters)
     
+    #Setup initial portfolio
+    trade_equity_spread = TradeEquity('spread', 
+                                      notional=0, 
+                                      price_series_label='spread')
+    
+    portfolio_0 = Portfolio("portfolio", cashAmt=100)
+    portfolio_0.add_trade(trade_equity_spread)
+    #No more trade types
+    portfolio_0.fixed_toggle()
+    
+    #Run over parameters in strategy
     for pars in strat_parameters:
         
         try:
-            portfolio_0, strategy, train_data, test_data = setup_strategy(pars, dataObj)
+            strategy, train_data, test_data = setup_strategy(pars, dataObj)
             
             #Get results on training
             tic = time.clock()
             portfolio = portfolio_0.copy() #Copy initial portfolio so can use in poth train and test
-            strategy.run_strategy(train_data , portfolio)
+            strategy.run_strategy(train_data, portfolio)
             toc = time.clock()
             print "training strategy took {} seconds to run".format(toc - tic)
             
-            analyser = ResultsAnalyser(strategy,referenceIndex=None)
+            analyser = ResultsAnalyser(strategy.result,referenceIndex=None)
             #Need to fix drawdowns have drawdown equal maxdrawdown always
             #Need length of maxdd to be where maxx dd occured
-            row = ['train',
-                    pars[0],
-                    pars[1],
-                    pars[2],
-                    pars[3],
-                    pars[4],
-                    pars[5],
-                    pars[6],
-                    pars[7],
-                    pars[8],
-                    analyser.get_result().iat[-1,0]/analyser.get_result().iat[0,0] - 1 ,
-                    analyser.get_volatility(),
-                    analyser.sharpe_ratio(),
-                    analyser.sortino_ratio(),
-                    pars[9]]
-#            
-#            
-#            
-#            
-#            row['runtype']= 'train'
-#            row['series_X']= pars[0]
-#            row['series_Y']= pars[1]
-#            row['rank'] = pars[2]
-#            row['entry_scale'] = pars[3]
-#            row['exit_scale'] = pars[4]
-#            row['train_start'] = pars[5]
-#            row['train_end'] = pars[6]
-#            row['test_start'] = pars[7]
-#            row['test_end'] = pars[8]
-#            row['returns']= analyser.get_result().iat[-1,0]/analyser.get_result().iat[0,0] - 1 
-#            row['volatility']= analyser.get_volatility()
-#            row['sharpe']=analyser.sharpe_ratio()
-#            row['sortino']=analyser.sortino_ratio()
-##            results_tables = results_tables.append( row, ignore_index=True)
-#            row_str = [str(it[1][0]) for it in row.iteritems() ]
+            
+            #Generate and write results to file
+            row = ['train'] + pars + result_func(analyser)
             row_str = [str(it) for it in row]
             row_str = ','.join(row_str) + '\n'
             outfile.write(row_str)
             
             
-                ##Drawdowns
+            ##Drawdowns
 #                    maxDD_lve = analyser.max_draw_down_magnitude()
 #                    maxDD_dur = analyser.max_draw_down_timelength()
 #                    row['maxDD_level']=maxDD_lve.loc['Drawdown']
@@ -138,43 +111,9 @@ def runStrat(strat_parameters, results_tables, dataObj, outfile):
             strategy.run_strategy(test_data, portfolio)
             toc = time.clock()
             print "testing strategy took {} seconds to run".format(toc - tic)
-            analyser = ResultsAnalyser(strategy,referenceIndex=None)
-#            row = pd.DataFrame([rownum]) 
-            #Need to fix drawdowns have drawdown equal maxdrawdown always
-            #Need length of maxdd to be where maxx dd occured
-            row = ['test',
-                    pars[0],
-                    pars[1],
-                    pars[2],
-                    pars[3],
-                    pars[4],
-                    pars[5],
-                    pars[6],
-                    pars[7],
-                    pars[8],
-                    analyser.get_result().iat[-1,0]/analyser.get_result().iat[0,0] - 1 ,
-                    analyser.get_volatility(),
-                    analyser.sharpe_ratio(),
-                    analyser.sortino_ratio(),
-                    pars[9]]
-#                   
-#            
-#            row['runtype']= 'test'
-#            row['series_X']= pars[0]
-#            row['series_Y']= pars[1]
-#            row['rank'] = pars[2]
-#            row['entry_scale'] = pars[3]
-#            row['exit_scale'] = pars[4]
-#            row['train_start'] = pars[5]
-#            row['train_end'] = pars[6]
-#            row['test_start'] = pars[7]
-#            row['test_end'] = pars[8]
-#            row['returns']= analyser.get_result().iat[-1,0]/analyser.get_result().iat[0,0] - 1 
-#            row['volatility']= analyser.get_volatility()
-#            row['sharpe']=analyser.sharpe_ratio()
-#            row['sortino']=analyser.sortino_ratio()
-##            results_tables = results_tables.append( row, ignore_index=True)
-#            row_str = [str(it[1][0]) for it in row.iteritems() ]
+            analyser = ResultsAnalyser(strategy.result,referenceIndex=None)
+            #Generate and write results to file
+            row = ['test'] + pars + result_func(analyser)
             row_str = [str(it) for it in row]
             row_str = ','.join(row_str) + '\n'
             outfile.write(row_str)
@@ -240,8 +179,10 @@ def runStrat(strat_parameters, results_tables, dataObj, outfile):
         finally:
             rownum +=2
             print rownum/2, 'out of', total_rows, 'done'
-            
-    return results_tables
+
+    #Cleanup            
+    outfile.close()        
+    
 
 def grid_tester(run_strat, do_plots):
         
@@ -250,7 +191,7 @@ def grid_tester(run_strat, do_plots):
     
 #    dbpath = "/home/phcostello/Documents/Data/FinanceData.sqlite"
 #    dbreader = dbr.DBReader(dbpath)
-#    #SP500 = dbreader.readSeries("SP500")
+    #SP500 = dbreader.readSeries("SP500")
     #BA = dbreader.readSeries("BA")
     #dim = 'Adj_Close'
     #SP500AdCl = SP500[dim]
@@ -266,28 +207,26 @@ def grid_tester(run_strat, do_plots):
     cointAnalysis = pickle.load(open('pickle_jar/results_FTSE100_coint.pkl','rb'))        
     cointAnalysis = pd.DataFrame(cointAnalysis, columns = ['SeriesX_name','SeriesY_name','Adf_pvalue', 'reg_scaling', 'reg_intercept'])
     cointAnalysis = cointAnalysis.sort('Adf_pvalue', ascending=True)
-    cointAnalysis.info()
+    #cointAnalysis.info()
     seriesNames = cointAnalysis[['SeriesX_name','SeriesY_name']]
-    dataObj.info()
+    #dataObj.info()
     
-    top10 = seriesNames.iloc[0:10]
+    top10 = seriesNames.iloc[0:5]
     top10['rank']= range(1, len(top10)+1)
     top10.head()
     top10 =top10.values.tolist()
     
     #Filter to what we want
-     
     #setup logging
     logfile = 'logs/GridTester_ma.txt'
     logging.basicConfig(filename= logfile, filemode='w', level = logging.ERROR)
-    
     
     ##################Make par Table##########################
     #Parameter table rows are
     #[ pairs_labes, strategy_params, train_ranges, test_ranges ]
     
     #series
-    series_names = top10[0:6]
+    series_names = top10
     
     #strat pars
     entry_scale = np.arange(1,3.5,0.5)
@@ -295,9 +234,9 @@ def grid_tester(run_strat, do_plots):
     strat_parameters = [ [sw, lw] for sw in entry_scale for lw in exit_scale if sw >= lw]
     
     #Train - test date pars
-    dmin = datetime.datetime(2008,1,1)
-    num_periods = 10
-    period_delta = datetime.timedelta(182)
+    dmin = datetime.datetime(2010,1,1)
+    num_periods = 8
+    period_delta = datetime.timedelta(91)
     #Create range start/end offsets from min data
     train_test_ranges = [ [dmin + i*period_delta, #train start
                          dmin + (i+1)* period_delta, #train end
@@ -308,23 +247,7 @@ def grid_tester(run_strat, do_plots):
     #Make table of parameters + dates
     parameter_table = [ series + pars + date_ranges for series in series_names for pars in strat_parameters for date_ranges in train_test_ranges]
     parameter_table = [ parameter_table[i] + [i] for i in range(0,len(parameter_table))]
-    print pd.DataFrame(parameter_table).iloc[20:40]
     
-    ##################Make Res Table##########################
-#    results_list = ['returns',\
-#                    'volatility',\
-#                    'sharpe', \
-#                    'sortino', \
-#                    'maxDD_level',\
-#                    'DD_level_start',\
-#                    'DD_level_end',\
-#                    'DD_level_length',\
-#                    'maxDD_duration',\
-#                    'DD_duration_start',\
-#                    'DD_duration_end',\
-#                    'DD_duration_length',\
-#                    'ETL_5',\
-#                    'ETL_1']
     
     colnames =['runtype',\
     'series_X',\
@@ -336,58 +259,65 @@ def grid_tester(run_strat, do_plots):
     'train_end',\
     'test_start',\
     'test_end',\
-    'returns',\
-    'volatility',\
-    'sharpe',\
-    'sortino',\
-    'par_rn']
-                                
-    #results_tables = list(parameter_table) #copy parameter table
-    #colnames = ['series_X','series_Y','entry_scale','exit_scale','start_train','end_train','start_test','end_test']
-    #colnames = colnames + results_list
-    #results_tables = pd.DataFrame(results_tables)
-    #results_tables = pd.DataFrame(columns=colnames)
-    ##Add zero columns for results
-    #for rstlbl in results_list:
-    #    results_tables[rstlbl] = 0
-#    colnames = ['series_X','series_Y','rank','entry_scale','exit_scale','train_start','train_end','test_start','test_end'] + results_list
-    results_tables = pd.DataFrame(columns =colnames)
-    print results_tables.head(50)
+    'par_rownumber']
+    
+    
+    ##################Make Res Table##########################
+    
+    #We just define   
+    result_cols = ['returns',\
+                   'volatility',\
+                   'sharpe',\
+                   'sortino']
+   
+    #Use x will be analyser object which has result functions
+    #result cols should have same order as function below
+    
+    result_func = lambda x : [x.get_result().iat[-1,0]/x.get_result().iat[0,0] - 1 ,
+                              x.get_volatility(),
+                              x.sharpe_ratio(),
+                              x.sortino_ratio()]
+    
+    result_table_cols = colnames + result_cols
         
     ##################Test strat on pars in Table##########################
     
     if run_strat:
+        
+        #open file for output
         outfile = open('Results/dummy.csv','wb')
-        header = ','.join(colnames) + '\n'
-        outfile.write(header)
-      
+        
+        #run simulations
         tic = time.clock()
-        results_tables = runStrat(parameter_table,results_tables,dataObj, outfile)
+        runStrat(parameter_table,dataObj, outfile, result_table_cols, result_func)
         toc = time.clock()
         print "All strategies took {} seconds to run".format(toc - tic)
         
         outfile.close()
     
-    ##################output results##########################
-    
-    
-#    results_tables.to_csv('Results/Results_pairs_FTSE100.csv', index=False)
-    
     #################$ Plot for one set of parameters ########################
     
-    #print pars, tstart, tend
-    
     #Setup Data
-    
     if do_plots:
-        this_pars = parameter_table[1221]
+        this_pars = parameter_table[959]
         #Setup Data
 
+        #Setup initial portfolio
+        trade_equity_spread = TradeEquity('spread', 
+                                          notional=0, 
+                                          price_series_label='spread')
+        
+        portfolio_0 = Portfolio("portfolio", cashAmt=100)
+        portfolio_0.add_trade(trade_equity_spread)
+        #No more trade types
+        portfolio_0.fixed_toggle()
+        
+        
         print this_pars
-        portfolio, strategy, train_data, test_data = setup_strategy(this_pars,dataObj)
-        data = train_data
-        strategy.run_strategy(data,portfolio)
-        analyser = ResultsAnalyser(strategy,referenceIndex=None)
+        strategy, train_data, test_data = setup_strategy(this_pars,dataObj)
+        data = test_data
+        strategy.run_strategy(data,portfolio_0)
+        analyser = ResultsAnalyser(strategy.result,referenceIndex=None)
         
         
         fig =plt.figure()
@@ -396,7 +326,7 @@ def grid_tester(run_strat, do_plots):
         
         portfolioVal = analyser.get_result()
         start = 0
-        end = 110
+        end = len(portfolioVal)
         portfolioVal['Value'].iloc[start:end].plot(ax=ax1)
         
 #        trades_at = portfolioVal[portfolioVal['Signal_bs'].isin(['buy','sell'])]
@@ -404,7 +334,6 @@ def grid_tester(run_strat, do_plots):
 #        #Putting trade bars on
 #        for dt in trades_at.index:
 #            plt.axvline( dt, ymin =0, ymax =1 )
-#        
         
         plt.subplot(2,1,1)
         pairs_md(data.loc[portfolioVal.index].iloc[start:end],0,0).plot_spreadAndSignals(ax2)

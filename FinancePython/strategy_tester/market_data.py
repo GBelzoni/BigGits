@@ -26,7 +26,7 @@ class market_data(pd.DataFrame):
         
         self[addedSeriesName] = pd.rolling_mean(self[fromIndex], win_length)
         
-    def addEMA(self, fromIndex, addedSeriesName = 'sma', win_length = 1):
+    def addEMA(self, fromIndex, addedSeriesName = 'ema', win_length = 1):
         
         self[addedSeriesName] = pd.ewma(self[fromIndex], win_length)
     
@@ -34,7 +34,12 @@ class market_data(pd.DataFrame):
         
         self[addedSeriesName] = pd.rolling_std(self[fromIndex], win_length)
     
+    def addBollBandef(self, fromIndex, addedSeriesName = 'BBand', scale=1,win_length = 1):
         
+        self[addedSeriesName+'upper'] = scale*pd.rolling_std(self[fromIndex], win_length) + self[fromIndex]
+        self[addedSeriesName+'lower'] = -scale*pd.rolling_std(self[fromIndex], win_length) + self[fromIndex]
+        
+            
 #old constructor for constructing from dataframe        
 #        try:
 #            if isinstance(dataOb, ro.vectors.Matrix) == True:
@@ -237,8 +242,6 @@ class moving_av_reversion(market_data):
 
 if __name__ == '__main__':
     
-#    def test_simple_md():
-    
     def test_pairs_md():
     #prepare data
         import DataHandler.DBReader as dbr
@@ -290,9 +293,63 @@ if __name__ == '__main__':
        
         marev_md.plot_spreadAndSignals()
         
+    
+    def test_simple_md():
         
-    test_pairs_md()
-    #test_MA_reversion_md()
-    plt.show()
+        #read in data for all FTSE100 series
+        import pickle
+        import os
+        os.chdir('/home/phcostello/Documents/workspace/BigGits/FinancePython')
+        Alldata = pickle.load(open('pickle_jar/FTSE100_AdjClose.pkl'))
+        print 'FTSE100 data info'
+        Alldata.info()
+        
+        #Pick one series
+        
+        data = Alldata.loc['2012':,'AMEC_plc']
+        data = pd.DataFrame(data,columns = ['Adj_Close'])
+        
+        
+        
+        #Create market data object - doesn't do much just tells
+        #data it now has some addTechnical functions
+        md = market_data(data)
+        md.plot()
+        plt.show()
+        
+        #Add moving averages and plot
+        md.addSMA(fromIndex='Adj_Close', 
+                  addedSeriesName = 'Simple_MA', 
+                  win_length=20)
+        
+        print 'FTSE100 data with Simple Moving ave added'
+        print md.head()
+        md.addEMA(  fromIndex='Adj_Close', 
+                  addedSeriesName = 'Exponential_MA', 
+                  win_length=20)
+        
+        
+        print 'FTSE100 data with Exponential Moving ave added'
+        print md.head()
+        md.plot()
+        plt.show()
+        
+        
+        #Add bollinger bands and plot
+        md.addBollBandef(fromIndex='Exponential_MA', 
+                  addedSeriesName = 'BBand_aroundEMA', 
+                  scale = 2,
+                  win_length=20)
+                
+        print 'FTSE100 data with BBands added'
+        print md.head()
+        md.plot()
+        plt.show()
+        
+        
+#    test_pairs_md()
+#    test_MA_reversion_md()
+    test_simple_md()
+    
     
         
