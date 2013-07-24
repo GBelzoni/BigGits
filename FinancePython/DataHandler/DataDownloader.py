@@ -92,6 +92,8 @@ class DataDownloader(DataHandlerBase):
         #Connect to db
         self.connect()
         
+        
+        
         for series in info.iterrows():
             
             #print "Starting loop for", series
@@ -111,10 +113,9 @@ class DataDownloader(DataHandlerBase):
             
             #Update Tables that have are less than maxDate
             
-            
-            
             if endDate >= maxDate :
                 logging.info("Table {0} already up to date".format(seriesName))
+            
             else:
                 try:
                     print "trying readData"
@@ -194,6 +195,8 @@ class DataDownloader(DataHandlerBase):
         
         #Check correct colnames
         if not(self.seriesList.columns == list(thisSeriesList.columns)).all():
+            print self.seriesList.columns
+            print thisSeriesList.columns
             raise ValueError('Columns (names) in import file are incorrect')
         
         #Strip whitespace in table values
@@ -208,12 +211,25 @@ class DataDownloader(DataHandlerBase):
             
             row = row[1] #itterow is tuple with second arg = value
             
+            #Replace problem characters in name with blank
+            row['SeriesName'] = row['SeriesName'].replace(".",'')
+            row['SeriesName'] = row['SeriesName'].replace("&",'')
+            row['SeriesName'] = row['SeriesName'].replace("-",'')
+            row['SeriesName'] = row['SeriesName'].replace(",",'')
+            row['SeriesName'] = row['SeriesName'].replace("'",'')
+            
+            
+            #Replace whitespace by "_"
+            row['SeriesName'] = row['SeriesName'].replace(" ",'_')
+            
+            
+            
             #Check type is allowable
             if (row['Type'] not in existing_types) and not newType:
                 logging.error('Series {0} has type {1} not in existing types'.format(row['SeriesName'],row['Type']))
                 continue
-            if (row['Index'] not in existing_indexes) and not newType:
-                logging.error('Series {0} has type {1} not in existing types'.format(row['SeriesName'],row['Index']))
+            if (row['Index'] not in existing_indexes) and not newIndex:
+                logging.error('Series {0} has index {1} not in existing indexes'.format(row['SeriesName'],row['Index']))
                 continue
             if row['Source'] not in existing_sources and not newSource:
                 logging.error('Series {0} has source {1} not in existing sources'.format(row['SeriesName'],row['Source']))
@@ -222,6 +238,7 @@ class DataDownloader(DataHandlerBase):
                 logging.error('Series {0} is already in existing SeriesNames'.format(row['SeriesName']))
                 continue
                 
+            
             
             #if passes all checks then write to db
             logging.info('Wrote {} to SeriesList'.format(row['SeriesName']))
@@ -241,37 +258,33 @@ if __name__ == "__main__":
     #Update SeriesList with data from csv. Does some checking and formatting    
     #TODO: Need to make this so it doesn't double up series
     #TODO: Need to add tables of sources and types
-    filename = "../SeriesInfoCSV/FTSE100.csv"
-    dd.addSeriesToUpdateList(filename)#, newType=True)
+
+    def addSeriesToUL(newIndex=False):
+        filename = "../SeriesInfoCSV/DowJonesIndustrial.csv"
+        dd.addSeriesToUpdateList(filename, newIndex=newIndex)
     
-    
-#    #Get types
-#    print set(dd.seriesList['Type'])
-#    #Get seriesNames
-#    print set(dd.seriesList['SeriesName'])
-#    #get Sources
-#    print set(dd.seriesList['Source'])
-#    
-#    
-    #Get names of series to updata
-#    info = dd.info('equity')
-#    info[ info['Index'] == 'FTSE100']
-#    names = [str(nm) for nm in dd.info('equity')]
-#    print names[ ]
-#    allinfo = dd.getAllInfo()
-#    FTSE100 = allinfo[allinfo['Index']=='FTSE100']
-#    print (FTSE100['SeriesName'].unique())
-#    
-#    names = FTSE100['SeriesName'].unique()
-#    print len(names)
-#    
-#    
-#    #Update series to end
-    end = (datetime.now().date()) #Has to be datetime.date object
-    names = [u'AAPL']
-    errortables = dd.updateSeriesData(names, end) #This updates series in db
-    print errortables
-    dd.updateRangeInfo(names) #this updates info in tables to reflect series
+    def updateDataSeries(updateData = False):
+        #Get names of series to update
+        allinfo = dd.seriesList
+        IndexFilter = 'DJIA'
+        IndexInfo = allinfo[allinfo['Index']==IndexFilter]
+        print (IndexInfo['SeriesName'].unique())
+        
+        #names = IndexInfo['SeriesName'].unique()
+        names = ['DJIA']
+        print names
+        
+        
+        #Update series to end
+        end = (datetime.now().date()) #Has to be datetime.date object
+        if updateData:
+            errortables = dd.updateSeriesData(names, end) #This updates series in db
+            print errortables
+        dd.updateRangeInfo(names) #this updates info in tables to reflect series
+        
+        
+#    addSeriesToUL(newIndex=True)
+    updateDataSeries(updateData=False)
 
 ### LITTTLE SCRIPT BELOW TO CLEAN OUT DB
 

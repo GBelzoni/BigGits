@@ -1,0 +1,32 @@
+SeriesName,LookupTicker,Type,Index,Source,StartRange,EndRange,Frequency
+DJIA,^DJI,index,DJIA,yahoo,1/1/2005,1/2/2005,d
+Alcoa Inc.,AA,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+American Express Company,AXP,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+The Boeing Company,BA,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+Bank of America Corporation,BAC,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+Caterpillar Inc.,CAT,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+"Cisco Systems, Inc.",CSCO,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+Chevron Corporation,CVX,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+E. I. du Pont de Nemours and Company,DD,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+The Walt Disney Company,DIS,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+General Electric Company,GE,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+"The Home Depot, Inc.",HD,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+Hewlett-Packard Company,HPQ,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+International Business Machines Corporation,IBM,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+Intel Corporation,INTC,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+Johnson & Johnson,JNJ,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+JPMorgan Chase & Co.,JPM,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+The Coca-Cola Company,KO,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+McDonald's Corp.,MCD,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+3M Company,MMM,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+Merck & Co. Inc.,MRK,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+Microsoft Corporation,MSFT,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+Pfizer Inc.,PFE,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+Procter & Gamble Co.,PG,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+"AT&T, Inc.",T,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+"The Travelers Companies, Inc.",TRV,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+UnitedHealth Group Incorporated,UNH,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+United Technologies Corp.,UTX,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+Verizon Communications Inc.,VZ,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+Wal-Mart Stores Inc.,WMT,equity,DJIA,yahoo,1/1/2005,1/2/2005,d
+Exxon Mobil Corporation,XOM,equity,DJIA,yahoo,1/1/2005,1/2/2005,d

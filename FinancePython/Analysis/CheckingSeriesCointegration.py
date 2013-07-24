@@ -12,18 +12,21 @@ import matplotlib.pyplot as plt
 from itertools import combinations
 import statsmodels.api as sm
 
-os.chdir('/home/phcostello/Documents/workspace/FinancePython')
+os.chdir('/home/phcostello/Documents/workspace/BigGits/FinancePython')
 
 if __name__ == '__main__':
+    
+    
     
     def load_data_from_DB():
 
         con_string = "/home/phcostello/Documents/Data/FinanceData.sqlite"
     
         dbreader = DBReader( con_string )
-        info = dbreader.getAllInfo()
-        FTSE100_dbinfo = info[info['Index'] == 'FTSE100'] 
-        series_names = FTSE100_dbinfo['SeriesName'].tolist()
+        info = dbreader.seriesList
+        dbinfo = info[info['Index'] == 'DJIA'] 
+        dbinfo = dbinfo[dbinfo['Type']=='equity'] 
+        series_names = dbinfo['SeriesName'].tolist()
         
         data_dict = { sn : dbreader.readSeries(sn) for sn in series_names}
         print 'number of series read', len(data_dict)
@@ -32,19 +35,20 @@ if __name__ == '__main__':
                                           intersect=True, 
                                           orient = 'minor')
         print 'panel items', panel_series.items
-        panel_series.set_index['Date']
+#        panel_series.set_index['Date']
         dim = 'Adj_Close'
         df_allseries_dim = panel_series[dim]
         
-        pickle.dump(df_allseries_dim,open('pickle_jar/FTSE100_AdjClose.pkl','wb'))
-        print df_allseries_dim.info()
+        pickle.dump(df_allseries_dim,open('pickle_jar/DJIA_AdjClose.pkl','w'))
+        
+        print df_allseries_dim
     
 
     ######### Finding I1 Series ##################################################
-    FTSE100_AdjClose = pickle.load(open('pickle_jar/FTSE100_AdjClose.pkl'))
     
     def CheckingWhichAreI1():
-        
+        FTSE100_AdjClose = pickle.load(open('pickle_jar/DJIA_AdjClose.pkl'))
+    
         resultsI1 = []
         
         for nm in FTSE100_AdjClose.columns.tolist():
@@ -61,11 +65,11 @@ if __name__ == '__main__':
         return resultsI1
         
     
-    #resultsI1 = CheckingWhichAreI1()
-    #resultsI1 = pd.DataFrame( resultsI1, columns = ['SeriesName','Adf_val'])
-    #resultsI1[ resultsI1['Adf_val'] < 0.05] 
-    #pickle.dump(resultsI1 , open('pickle_jar/results_FTSE100_I1.pkl','wb'))
-    resultsI1 = pickle.load( open('pickle_jar/results_FTSE100_I1.pkl','rb'))
+#    resultsI1 = CheckingWhichAreI1()
+#    resultsI1 = pd.DataFrame( resultsI1, columns = ['SeriesName','Adf_val'])
+#    resultsI1[ resultsI1['Adf_val'] < 0.05] 
+#    pickle.dump(resultsI1 , open('pickle_jar/results_DJIA_I1.pkl','wb'))
+    resultsI1 = pickle.load( open('pickle_jar/results_DJIA_I1.pkl','rb'))
     
     print len(resultsI1)
     
@@ -75,9 +79,11 @@ if __name__ == '__main__':
     ######### Finding Cointegrated series #################################
     
     
-    results = []
+    
     def search_for_CI(series_names):
         
+        FTSE100_AdjClose = pickle.load(open('pickle_jar/DJIA_AdjClose.pkl'))
+        results = []
         combs = [cm for cm in  combinations(series_names,2)]
         
         i = 0
@@ -116,49 +122,51 @@ if __name__ == '__main__':
                 print "Error is ", e.what()
             
         
-        pickle.dump(results , open('pickle_jar/results_FTSE100_coint.pkl','wb'))
+        pickle.dump(results , open('pickle_jar/results_DJIA_coint.pkl','wb'))
         
-    
     
     ######### Analysing Results ###################################### 
     
-    #search_for_CI(I1seriesNames)
+#    load_data_from_DB()
+#    search_for_CI(I1seriesNames)
     
-    results = pickle.load(open('pickle_jar/results_FTSE100_coint.pkl','rb'))        
-    results = pd.DataFrame(results, columns = ['SeriesX_name','SeriesY_name','Adf_pvalue', 'reg_scaling', 'reg_intercept'])
-    results = results.sort('Adf_pvalue', ascending=True)
-    
-    print results.head(15)
-    
-    for row in range(0,3):
-        rowinfo = results.iloc[row].tolist()
-        seriesX = FTSE100_AdjClose[rowinfo[0]]
-        seriesX = seriesX[seriesX.notnull()]
+    def plots():
+        FTSE100_AdjClose = pickle.load(open('pickle_jar/DJIA_AdjClose.pkl'))
+        results = pickle.load(open('pickle_jar/results_DJIA_coint.pkl','rb'))        
+        results = pd.DataFrame(results, columns = ['SeriesX_name','SeriesY_name','Adf_pvalue', 'reg_scaling', 'reg_intercept'])
+        results = results.sort('Adf_pvalue', ascending=True)
         
-        seriesY = FTSE100_AdjClose[rowinfo[1]]
-        seriesY = seriesY[seriesY.notnull()]
+        print results.head(15)
         
-        
-        df_coint_check = pd.merge(pd.DataFrame(seriesX),
-                              pd.DataFrame(seriesY), 
-                              how='inner', 
-                              left_index=True, 
-                              right_index=True)
-        
-        
-        df_coint_check.columns = ['x','y']
-        pmd = pairs_md(df_coint_check, xInd='x', yInd = 'y')
-        pmd.fitOLS()
-        pmd.generateTradeSigs(windowLength=20, entryScale=2, exitScale=0)
-        
-        pmd.plot_spreadAndSignals()
-        plt.title( "Row {3}: Spread between {0} and {1}, scaling {2}".format(rowinfo[0],rowinfo[1],rowinfo[3], row))
-        
-        
-        
-    plt.show()
+        for row in range(0,5):
+            rowinfo = results.iloc[row].tolist()
+            seriesX = FTSE100_AdjClose[rowinfo[0]]
+            seriesX = seriesX[seriesX.notnull()]
+            
+            seriesY = FTSE100_AdjClose[rowinfo[1]]
+            seriesY = seriesY[seriesY.notnull()]
+            
+            
+            df_coint_check = pd.merge(pd.DataFrame(seriesX),
+                                  pd.DataFrame(seriesY), 
+                                  how='inner', 
+                                  left_index=True, 
+                                  right_index=True)
+            
+            
+            df_coint_check.columns = ['x','y']
+            pmd = pairs_md(df_coint_check, xInd='x', yInd = 'y')
+            pmd.fitOLS()
+            pmd.generateTradeSigs(windowLength=20, entryScale=2, exitScale=0)
+            
+            pmd.plot_spreadAndSignals()
+            plt.title( "Row {3}: Spread between {0} and {1}, scaling {2}".format(rowinfo[0],rowinfo[1],rowinfo[3], row))
+            
+            
+            
+        plt.show()
 
-    
+    plots()
     
 #    
 #    

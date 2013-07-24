@@ -203,8 +203,8 @@ def grid_tester(run_strat, do_plots):
     #Note have checked top 10 in and constructed data in
     #CheckingSeriesCoint.py
     
-    dataObj = pickle.load(open('pickle_jar/FTSE100_AdjClose.pkl'))
-    cointAnalysis = pickle.load(open('pickle_jar/results_FTSE100_coint.pkl','rb'))        
+    dataObj = pickle.load(open('pickle_jar/DJIA_AdjClose.pkl'))
+    cointAnalysis = pickle.load(open('pickle_jar/results_DJIA_coint.pkl','rb'))        
     cointAnalysis = pd.DataFrame(cointAnalysis, columns = ['SeriesX_name','SeriesY_name','Adf_pvalue', 'reg_scaling', 'reg_intercept'])
     cointAnalysis = cointAnalysis.sort('Adf_pvalue', ascending=True)
     #cointAnalysis.info()
@@ -234,9 +234,9 @@ def grid_tester(run_strat, do_plots):
     strat_parameters = [ [sw, lw] for sw in entry_scale for lw in exit_scale if sw >= lw]
     
     #Train - test date pars
-    dmin = datetime.datetime(2010,1,1)
-    num_periods = 8
-    period_delta = datetime.timedelta(91)
+    dmin = datetime.datetime(2006,1,1)
+    num_periods = 15
+    period_delta = datetime.timedelta(182)
     #Create range start/end offsets from min data
     train_test_ranges = [ [dmin + i*period_delta, #train start
                          dmin + (i+1)* period_delta, #train end
@@ -299,7 +299,7 @@ def grid_tester(run_strat, do_plots):
     
     #Setup Data
     if do_plots:
-        this_pars = parameter_table[959]
+        this_pars = parameter_table[1298]
         #Setup Data
 
         #Setup initial portfolio
@@ -315,7 +315,7 @@ def grid_tester(run_strat, do_plots):
         
         print this_pars
         strategy, train_data, test_data = setup_strategy(this_pars,dataObj)
-        data = test_data
+        data = train_data
         strategy.run_strategy(data,portfolio_0)
         analyser = ResultsAnalyser(strategy.result,referenceIndex=None)
         

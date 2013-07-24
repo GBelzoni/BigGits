@@ -33,4 +33,13 @@ class DBReader(DataHandlerBase):
         except Exception as e:
             print "Problem converting date index using pd.to_datetime in series {0}, error is {1}".format(seriesName,e)   
         
-        
+       
+if __name__ == '__main__':
+    
+    import matplotlib.pyplot as plt
+    dr = DBReader()
+    name = 'DJIA'
+    df = dr.readSeries(name)
+    
+    df.plot()
+    plt.show()
