@@ -9,8 +9,6 @@ from strategy_tester.strategy_pairs import Strategy_Pairs
 #prepare data
 import DataHandler.DBReader as dbr
 
-
-
 ##################setupStrat(par) -define function##########################
 #%cpaste
 def setup_strategy(pars, dataObj):
@@ -299,7 +297,7 @@ def grid_tester(run_strat, do_plots):
     
     #Setup Data
     if do_plots:
-        this_pars = parameter_table[1298]
+        this_pars = parameter_table[496]
         #Setup Data
 
         #Setup initial portfolio
@@ -315,7 +313,7 @@ def grid_tester(run_strat, do_plots):
         
         print this_pars
         strategy, train_data, test_data = setup_strategy(this_pars,dataObj)
-        data = train_data
+        data = test_data
         strategy.run_strategy(data,portfolio_0)
         analyser = ResultsAnalyser(strategy.result,referenceIndex=None)
         
@@ -325,6 +323,7 @@ def grid_tester(run_strat, do_plots):
         ax2 = fig.add_subplot(2,1,2)
         
         portfolioVal = analyser.get_result()
+        print portfolioVal['Value']
         start = 0
         end = len(portfolioVal)
         portfolioVal['Value'].iloc[start:end].plot(ax=ax1)
@@ -345,4 +344,4 @@ def grid_tester(run_strat, do_plots):
 if __name__ == '__main__':
     
     grid_tester(run_strat = False, do_plots = True)
-#    grid_tester(run_strat = True, do_plots = False)
+#     grid_tester(run_strat = True, do_plots = False)

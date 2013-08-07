@@ -80,7 +80,8 @@ class ResultsAnalyser(object):
     def get_cumulative_return(self,cumperiods=1,useReference = False):
         
         rets = self.get_returns(1, useReference) #get 1period returns
-        cumrets = (1+rets).cumprod()-1 #cumulate
+        rets_abv_ref = pd.DataFrame(rets['Portfolio']-rets['Reference'])
+        cumrets = (1+rets_abv_ref).cumprod()-1 #cumulate
         cumrets = (cumrets-1)**cumperiods + 1 #Apply annualising factor
         return cumrets
         

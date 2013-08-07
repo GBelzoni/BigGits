@@ -522,14 +522,19 @@ class Reversion_EntryExitTechnical(Trade_Strategy):
 #            
             
             
-            ##Constant betsize
+            ##Constant betsize - nominal
             if self.tradeEnteredFlag:
                 trade_size = np.abs(self.portfolio.trades['spread'].notional)
             elif self.tradeEnteredFlag==False:
                 trade_size = np.abs(100/self.market_data['spread'].loc[time]) 
-            
+#             
+#             ##Constant betsize - real
+#             if self.tradeEnteredFlag:
+#                 trade_size = np.abs(self.portfolio.trades['spread'].notional)
+#             elif self.tradeEnteredFlag==False:
+#                 trade_size = np.abs(100/self.market_data['spread'].loc[time]) 
             upd_portfolio(trade_size)
-            
+             
             
         #self.result = make_res_tb(self.market_data,self.timeIndex)
         #Format to pandas dataframe with Time index

@@ -17,7 +17,6 @@ import statsmodels.api as sm
 
 zoo = importr('zoo')
 
-
 class market_data(pd.DataFrame):
 
     ''' Market Data is a pandas Dataframe with methods for adding techinicals fitting models etc '''
@@ -34,28 +33,55 @@ class market_data(pd.DataFrame):
         
         self[addedSeriesName] = pd.rolling_std(self[fromIndex], win_length)
     
-    def addBollBandef(self, fromIndex, addedSeriesName = 'BBand', scale=1,win_length = 1):
+    def addEWSDev(self, fromIndex, addedSeriesName = 'ewstdev', win_length = 1):
+        
+        self[addedSeriesName] = pd.ewmstd(self[fromIndex], win_length)
+    
+    
+    def addBollBand_S(self, fromIndex, addedSeriesName = 'BBand', scale=1,win_length = 1):
         
         self[addedSeriesName+'upper'] = scale*pd.rolling_std(self[fromIndex], win_length) + self[fromIndex]
         self[addedSeriesName+'lower'] = -scale*pd.rolling_std(self[fromIndex], win_length) + self[fromIndex]
         
-            
-#old constructor for constructing from dataframe        
-#        try:
-#            if isinstance(dataOb, ro.vectors.Matrix) == True:
-#                names = ro.r.colnames(dataOb)
-#                time_stamp = zoo.index(dataOb)
-#                self.core_data = pandas.DataFrame(numpy.array(zoo.coredata(dataOb)), index = time_stamp, columns = names)
-#            elif isinstance(dataOb, pandas.DataFrame):
-#                self.core_data = dataOb
-#            else:
-#                raise NameError('Error: Not supported object')
-#            
-#        except NameError:   
-#            raise        
-#        
-       
+    def addBollBand_EW(self, fromIndex, addedSeriesName = 'BBand', scale=1,win_length = 1):
+        
+        self[addedSeriesName+'upper'] = scale*pd.ewmstd(self[fromIndex], win_length) + self[fromIndex]
+        self[addedSeriesName+'lower'] = -scale*pd.ewmstd(self[fromIndex], win_length) + self[fromIndex]
+    
 
+    def iscrossing(self,time_id,first_name, second_name):
+        
+        '''
+        Returns if first_name series, crosses second_name series
+        
+        inputs 
+        time_id - index of time to check for crossing
+        first_name - colname of first series
+        second_name -colname of second series
+        
+        returns.
+        'up' if f_series < s_series below at time_id -1 and f_series > s_series at time time_id
+        'down' if vice-versa
+        'none' if no crossing at time_id
+        ''' 
+        
+        t1 = self.index[time_id]
+        t0 = self.index[time_id-1]
+        #Crossing variable check
+        first0 = self.at[t0,first_name]
+        first1 = self.at[t1,first_name]
+        second0 = self.at[t0,second_name]
+        second1 = self.at[t1,second_name]
+    
+        if (first0 < second0) and (first1 > second1):
+            return 'up'
+        elif (first0 > second0) and (first1 < second1):
+            return 'down'
+        else:
+            return 'none'
+        
+        
+        
 class simple_ma_md(market_data):
         
     def generateTradeSig(self , seriesName, sig_index, short_win, long_win):
@@ -152,21 +178,36 @@ class pairs_md(market_data):
         result = sm.tsa.adfuller(resid)
         return result
         
-    def generateTradeSigs(self, windowLength, entryScale, exitScale, reg_params = None):
+    def generateTradeSigs(self, 
+                          windowLength, 
+                          entryScale, 
+                          exitScale, 
+                          ewma_par = None,
+                          reg_params = None):
         
+        #option to specifiy reg params if not using those from OLSfit
         if reg_params == None:
             self['spread'] = self.results.resid
         else:
             self['spread'] = self[self.yInd] - reg_params[1]*self[self.xInd] - reg_params[0]       
         
-        self['entryUpper'] = entryScale*pd.rolling_std(self['spread'],windowLength)
-        self['entryLower'] = -entryScale*pd.rolling_std(self['spread'],windowLength)
-        self['exitUpper'] = exitScale*pd.rolling_std(self['spread'],windowLength)
-        self['exitLower'] = -exitScale*pd.rolling_std(self['spread'],windowLength)
+        #We want to scale entry and exit params around the moving average - if ewma parameter given we do this
+        if ewma_par == None:
+            self['trend'] = 0
+        else:
+            self['trend'] = pd.ewma(self['spread'], ewma_par)
+        
+        trend = self['trend']
+        #contruct bollingers based around trend
+        self['entryUpper'] = trend + entryScale*pd.rolling_std(self['spread'],windowLength)
+        self['entryLower'] = trend  - entryScale*pd.rolling_std(self['spread'],windowLength)
+        self['exitUpper'] = trend + exitScale*pd.rolling_std(self['spread'],windowLength)
+        self['exitLower'] = trend - exitScale*pd.rolling_std(self['spread'],windowLength)
     
     def plot_spreadAndSignals(self, ax=None):
         
         dataLabels = ['spread',
+                      'trend',
                       'entryUpper',
                       'entryLower',
                       'exitUpper',
@@ -176,8 +217,7 @@ class pairs_md(market_data):
         plotData.plot(ax = ax)
         
         
-        
-class moving_av_reversion(market_data):
+class ewma_stdev_entry_exit(market_data):
     
     def __init__(self, dataOb, seriesName, sig_index):
         
@@ -203,16 +243,16 @@ class moving_av_reversion(market_data):
         
         #generate Moving Ave to revert to
         self.addEMA(sig_index, 'MovingAve', MAWin)
-        self['spread'] = self[sig_index] - self['MovingAve']
+        self['signal'] = self[sig_index] - self['MovingAve']
         
         #Generate Entry/Exit sigs
-        spread = self['spread']
+        signal = self['signal']
         
-        #gen moving std of spread
-        self.addSDev('spread','entryUpper', stdDevWin)
-        self.addSDev('spread','entryLower', stdDevWin)
-        self.addSDev('spread','exitUpper', stdDevWin)
-        self.addSDev('spread','exitLower', stdDevWin)
+        #gen moving std of signal
+        self.addEWSDev('signal','entryUpper', stdDevWin)
+        self.addEWSDev('signal','entryLower', stdDevWin)
+        self.addEWSDev('signal','exitUpper', stdDevWin)
+        self.addEWSDev('signal','exitLower', stdDevWin)
         
         self['entryUpper'] *= entryScale
         self['entryLower'] *= -entryScale
@@ -226,19 +266,17 @@ class moving_av_reversion(market_data):
         self['exitLower'] += self['MovingAve']
 
         
-    def plot_spreadAndSignals(self):
+    def plot_Signals(self):
     
         dataLabels = [self.sig_index,
                       'MovingAve',
                       'entryUpper',
-                      'entryLower']
-#                      'exitUpper',
-#                      'exitLower']
-#                        
+                      'entryLower',
+                      'exitUpper',
+                      'exitLower']
+                        
         plotData = self[dataLabels]
         plotData.plot()
-
-        
 
 if __name__ == '__main__':
     
@@ -270,10 +308,15 @@ if __name__ == '__main__':
         scale = pmd.results.params['x']
         intercept = pmd.results.params['const']
         reg_params = [intercept, scale]
-        pmd.generateTradeSigs(50, entryScale=1.5, exitScale=0, reg_params=reg_params)
+        pmd.generateTradeSigs(50, 
+                              entryScale=1.5, 
+                              exitScale=0, 
+                              ewma_par = 200,
+                              reg_params=reg_params)
         pmd.plot_spreadAndSignals()
+        plt.show()
         
-    def test_MA_reversion_md():
+    def test_EWMA_with_entry_exit():
         #prepare data
         import DataHandler.DBReader as dbr
         dbpath = "/home/phcostello/Documents/Data/FinanceData.sqlite"
@@ -282,17 +325,17 @@ if __name__ == '__main__':
         dim = 'Adj_Close'
         SP500AdCl = SP500[dim]
         
-        marev_md = moving_av_reversion(dataOb = SP500,
+        ewma_md = ewma_stdev_entry_exit(dataOb = SP500,
                                        seriesName = "SP500",
                                        sig_index =dim)
         
-        marev_md.generateTradeSigs(MAWin = 50,
-                                   stdDevWin = 20,
-                                   entryScale = 2,
+        ewma_md.generateTradeSigs(MAWin = 50,
+                                   stdDevWin = 10,
+                                   entryScale = 1,
                                    exitScale= 0)
        
-        marev_md.plot_spreadAndSignals()
-        
+        ewma_md.plot_Signals()
+        plt.show()
     
     def test_simple_md():
         
@@ -347,9 +390,11 @@ if __name__ == '__main__':
         plt.show()
         
         
-#    test_pairs_md()
-#    test_MA_reversion_md()
-    test_simple_md()
+
+#     test_pairs_md()
+    
+    test_EWMA_with_entry_exit()
+#     test_simple_md()
     
     
         

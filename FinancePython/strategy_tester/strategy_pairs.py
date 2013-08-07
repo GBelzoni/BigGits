@@ -38,6 +38,7 @@ class Strategy_Pairs(Reversion_EntryExitTechnical):
         self.intercept = intercept_initial
         self.entry_scale = entry_scale
         self.exit_scale = exit_scale
+        self.plot_flag = False
         
     def fit(self, data):
         
@@ -49,11 +50,10 @@ class Strategy_Pairs(Reversion_EntryExitTechnical):
     
     def run_strategy(self, market_data, portfolio):
         
-        plot_flag = False
         
         if (pd.isnull(market_data)).any()[0]:
-           
-           raise ValueError("Series XY = {0}, {1} do not have equal date range".format(self.series_x_label, self.series_y_label)) 
+            #Raise this error to make sure there's no gaps in data
+            raise ValueError("Series XY = {0}, {1} do not have equal date range".format(self.series_x_label, self.series_y_label)) 
         
         reg_params = [self.intercept, self.scaling]
         
@@ -65,6 +65,7 @@ class Strategy_Pairs(Reversion_EntryExitTechnical):
         md.generateTradeSigs(windowLength = self.window_length,
                               entryScale= self.entry_scale, 
                               exitScale = self.exit_scale, 
+#                               ewma_par= 100,
                               reg_params = reg_params
                               )
         
@@ -74,9 +75,9 @@ class Strategy_Pairs(Reversion_EntryExitTechnical):
                                                   portfolio)
         
         
-        if plot_flag:
+        if self.plot_flag:
             md.plot_spreadAndSignals()
-            self.result['Value'].plot()
+            #self.result['Value'].plot()
             
 
 if __name__ == '__main__':
@@ -118,6 +119,8 @@ if __name__ == '__main__':
                                entry_scale = 1.0, 
                                exit_scale = 0.5)
         
+        strat.plot_flag = True
+        
         dateIndexlen = len(dataObj.index)
         startDate_train = datetime.date(2012,12,30)
         endDate_train = datetime.date(2013,6,30)
@@ -129,6 +132,8 @@ if __name__ == '__main__':
         trainData = dataObj.loc[startDate_train:endDate_train]
         testData = dataObj.loc[startDate_test:endDate_test]
         
+        print trainData.info()
+        
         strat.fit(trainData)
         #Make sure to make a copy of the initialis portfolio
         #Or when you rerun the portfolio it will be the end of the previous
@@ -136,6 +141,8 @@ if __name__ == '__main__':
         portTrain = copy.deepcopy(port)
         strat.run_strategy(market_data = trainData,
                             portfolio = portTrain)
+        
+        
         
         portTest = copy.deepcopy(port)
         strat.run_strategy(market_data = testData,
@@ -147,6 +154,7 @@ if __name__ == '__main__':
 #        strat.run_strategy(market_data = testData,
 #                            portfolio = portTest2)
 
+        
         plt.show()
         
  #       strat.result.to_csv('Results/pairsmd.csv')
