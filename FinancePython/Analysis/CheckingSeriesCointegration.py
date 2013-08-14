@@ -39,7 +39,7 @@ if __name__ == '__main__':
         dim = 'Adj_Close'
         df_allseries_dim = panel_series[dim]
         
-        pickle.dump(df_allseries_dim,open('pickle_jar/DJIA_AdjClose.pkl','w'))
+        pickle.dump(df_allseries_dim,open('pickle_jar/SP500_AdjClose.pkl','w'))
         
         print df_allseries_dim
     

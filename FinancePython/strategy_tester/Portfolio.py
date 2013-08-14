@@ -6,6 +6,7 @@ Created on Nov 29, 2012
 
 import strategy_tester.market_data as md
 import strategy_tester.trade as td
+import pandas as pd
 import copy
 
 
@@ -125,7 +126,17 @@ class Portfolio(object):
             
         return delta 
 
-
+    def info(self):
+        
+        '''
+        Basic info table on portfolio
+        '''
+        
+        info_table = [ [td.name, td.notional, td.type] for td in self.trades.values() ]
+        
+        info_table = pd.DataFrame(info_table, columns = ['TradeName','Notional','Type'])
+        
+        return info_table
         
 if __name__ == '__main__':
     

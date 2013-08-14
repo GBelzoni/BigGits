@@ -32,6 +32,12 @@ class Trade_Strategy(object):
         self.timeIndex = None
         self.result = None
         
+    def setup_portfolio(self):
+        pass
+    
+    def generate_signals(self):
+        pass
+    
     def upd_signal(self):
         pass
     

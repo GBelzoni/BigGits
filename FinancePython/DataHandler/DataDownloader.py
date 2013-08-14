@@ -136,7 +136,69 @@ class DataDownloader(DataHandlerBase):
         self.disconnect()
        
         return errortables
+         
+    def backdateSeriesData(self,seriesNames, minDate = None, logfile = None):
         
+        errortables = []
+        
+        
+        #self.updateRangeInfo(seriesNames=seriesNames)
+        
+        if logfile !=None:
+            logging.basicConfig(filename= logfile, filemode='w', level = logging.DEBUG)
+        else:
+            logging.basicConfig(level = logging.INFO)
+        #Get info for series
+        info = self.infoSeries(seriesNames)
+        
+        #Connect to db
+        self.connect()
+        
+        
+        
+        for series in info.iterrows():
+            
+            #print "Starting loop for", series
+            #Read relevant info
+            series = series[1]
+            startDate = pd.to_datetime(series['StartRange'])
+            if isinstance(startDate, datetime)==False:
+                continue
+            startDate = startDate.date()
+            
+            seriesName = series['SeriesName']
+            lookupTicker = series['LookupTicker']
+            source = series['Source']
+            
+            #add logging message
+            logging.info("updateData for {0}".format(seriesName))
+            
+            #Update Tables that have are less than maxDate
+            
+            if startDate <= minDate :
+                logging.info("Table {0} already up to date".format(seriesName))
+            
+            else:
+                try:
+                    print "trying readData"
+                    startDate -= timedelta(days=1)
+                    data = self.readData(lookupTicker, source, minDate, startDate)
+                except Exception as e:
+                    logging.error(e)
+                    errortables.append(seriesName)
+                    continue
+                try:
+                    self.writeFrameToDB(data, seriesName)
+                except:
+                    errortables.append(seriesName)
+                    continue
+                
+        #self.updateRangeInfo(seriesNames=seriesNames)
+        
+        self.disconnect()
+       
+        return errortables
+      
     def readData(self, lookupTicker, source, start, end):
         
         '''Read the data - assumes start and end are datetime.date objects'''
@@ -281,10 +343,32 @@ if __name__ == "__main__":
             errortables = dd.updateSeriesData(names, end) #This updates series in db
             print errortables
         dd.updateRangeInfo(names) #this updates info in tables to reflect series
+      
+    def backdateDataSeries(updateData = False):
+        #Get names of series to update
+        allinfo = dd.seriesList
+        IndexFilter = 'SP500'
+        IndexInfo = allinfo[allinfo['Index']==IndexFilter]
+        print (IndexInfo['SeriesName'].unique())
+        
+        #names = IndexInfo['SeriesName'].unique()
+        names = (IndexInfo['SeriesName'].unique())
+        print names
         
         
+        #Update series to end
+        start = datetime(2005,1,1).date() #Has to be datetime.date object
+        print start
+        if updateData:
+            errortables = dd.backdateSeriesData(names, start) #This updates series in db
+            print errortables
+            dd.updateRangeInfo(names) #this updates info in tables to reflect series
+        
+          
+      
 #    addSeriesToUL(newIndex=True)
-    updateDataSeries(updateData=False)
+#     updateDataSeries(updateData=False)
+    backdateDataSeries(updateData=True)
 
 ### LITTTLE SCRIPT BELOW TO CLEAN OUT DB
 

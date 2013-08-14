@@ -52,7 +52,7 @@ class ResultsAnalyser(object):
         
         return self.result_subset.loc[self.result_date_range[0]:self.result_date_range[1]]
     
-    def get_returns(self,cumperiods =1,useReference=False):
+    def get_returns(self,annualing_factor=1,useReference=False):
         
         ''' Calcs returns vs above referenceIndex, if None type then usual returns '''
         
@@ -74,6 +74,9 @@ class ResultsAnalyser(object):
             rets['Reference'] = 0
             
         rets.columns = ['Portfolio','Reference']
+        
+        #Annualising factor
+        rets *= annualing_factor
         
         return rets
     
@@ -97,9 +100,13 @@ class ResultsAnalyser(object):
             return rets['Portfolio'].std()
         
         
-    def sharpe_ratio(self, useMarketRef=False):
+    def sharpe_ratio(self, useMarketRef=False, annualising_factor = 252):
         
-        ''' Calcs sharpe ratio vs marketRef, if None then riskfree rate assumed to be 0'''
+        ''' 
+        Calcs sharpe ratio vs marketRef, 
+        if useMarketRef = None then riskfree rate assumed to be 0
+        annualising_factor - scales sr by sqrt of AF. Default is daily returns to annual with 252 trading days
+        '''
         
         rets = self.get_returns(useReference=useMarketRef)
         
@@ -108,7 +115,7 @@ class ResultsAnalyser(object):
         else:
             retsOverRef = rets['Portfolio']
         
-        sr = retsOverRef.mean(skipna=True)/retsOverRef.std(skipna = True)
+        sr = np.sqrt(annualising_factor) * retsOverRef.mean(skipna=True)/retsOverRef.std(skipna = True)
         return sr
     
     def sortino_ratio(self, useMarketRef= False, benchmarkRate = None ):

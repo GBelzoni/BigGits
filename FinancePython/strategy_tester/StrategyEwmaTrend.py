@@ -206,14 +206,16 @@ if __name__ == '__main__':
 #         plt.show()
         plt.figure()
         strat.result['Value'].plot()
-        plt.show()
+#         plt.show()
  #       strat.result.to_csv('Results/pairsmd.csv')
         
         from strategy_tester.ResultsAnalyser import ResultsAnalyser
         
-        ra = ResultsAnalyser(data= strat.result)
+        
+        ra = ResultsAnalyser(data= strat.result) #Sharpe for strat
         print ra.sharpe_ratio(), ra.get_cumulative_return().iloc[-1,0]
-        ra2 = ResultsAnalyser(data = SP500,valueIndex='Adj_Close')
+        
+        ra2 = ResultsAnalyser(data = SP500,valueIndex='Adj_Close') #Sharpe for SP500
         print ra2.sharpe_ratio(), ra2.get_cumulative_return().iloc[-1,0]
     
         combresdata = pd.merge(strat.result,SP500, how='inner', left_index=True, right_index=True)
