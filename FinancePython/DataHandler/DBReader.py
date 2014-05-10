@@ -34,7 +34,7 @@ class DBReader(DataHandlerBase):
         try:
             data.index = pd.to_datetime(data.index)
             data.sort_index(inplace=True)
-            return data
+            return pd.DataFrame(data)
         except Exception as e:
             print "Problem converting date index using pd.to_datetime in series {0}, error is {1}".format(seriesName,e)   
             raise e

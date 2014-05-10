@@ -56,8 +56,25 @@ class StrategyMSeriesMomentum(tsc.Trade_Strategy):
         ema = pd.ewma(train_data, self.ema_par)
         momentum = ema.pct_change(self.lookback)
         ranks = momentum.iloc[-self.lag].rank(ascending=False).order()
+        
         #Pick top 10 and with momentum >0
         topn = self.top_scores_num
+        
+        #New to get neg mom series
+        
+        mom_slice = momentum.iloc[-self.lag]
+        ranks_all = (np.abs(momentum.iloc[-self.lag])).order(ascending=False)
+        
+        rind_top = ranks_all.index[0:topn]
+        pos_series = rind_top[ mom_slice.loc[rind_top]>0]
+        neg_series = rind_top[ mom_slice.loc[rind_top]<0]
+        
+        pos_weights = np.array(range( len(pos_series),0,-1))/float(sum(range( len(pos_series),0,-1)))
+        neg_weights = -np.array(range( len(neg_series),0,-1))/float(sum(range( len(neg_series),0,-1)))  
+        
+        weights = pos_weights.tolist()+neg_weights.tolist()
+        weights = pd.DataFrame(weights, index = pos_series + neg_series, columns = ['weights'])
+        
         port_series = ranks.iloc[0:topn][ ranks.iloc[0:topn]>0].index
         #Create weightings
         #weights = np.ones(len(port_series))
@@ -73,6 +90,7 @@ class StrategyMSeriesMomentum(tsc.Trade_Strategy):
         Nothing much to do here - passive strategy
         '''
         pass
+    
     
     
     def upd_portfolio(self):

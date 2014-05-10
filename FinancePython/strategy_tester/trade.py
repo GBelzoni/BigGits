@@ -5,14 +5,13 @@ Created on Nov 29, 2012
 '''
 
 import math
-import PricingRiskAnalytics.FinanceAnalyticFunctions as faf
 from scipy.stats import norm
-from strategy_tester.market_data import *
+
 
 
 class Trade(object):
     '''
-    classdocs
+    Trade Base object
     '''
 
     def __init__(self, name, type, notional):
